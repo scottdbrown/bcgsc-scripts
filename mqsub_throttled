@@ -1,0 +1,240 @@
+#!/gsc/software/linux-x86_64-centos5/python-3.4.3/bin/python3
+
+'''
+mqsub_throttled for batch SGE cluster job submission
+
+Script to submit SGE jobs to cluster from single script file.
+Heavily based on Bernand Li's mqsub (/opt/sge/bin/lx24-amd64/mqsub)
+Addition to limit the number of jobs in the queue at one time.
+
+Date: March 23, 2016
+@author:    Scott Brown
+            Canada's Michael Smith Genome Sciences Centre
+            BC Cancer Research Centre
+            Genome Science + Technology Graduate Program
+            University of British Columbia
+            Vancouver, BC, Canada
+            http://www.holtlab.ca
+            http://www.scottderekbrown.com
+            sbrown@bcgsc.ca
+'''
+
+## Import Libraries
+import sys
+import argparse
+import subprocess
+import time
+import getpass
+import os
+
+
+## global vars
+DEBUG = False
+VERB = False
+
+QSUB_CMD = None
+DIRNAME = None
+FILENAME = None
+JOBNAME = None
+MKDIR = False
+NOSUBMIT = False
+QSUB_ARGS = None
+MAX_JOBS_HARD = 10000
+MAX_JOBS = 0
+REFRESH = 0
+
+
+''' Functions '''
+
+def getArgs():
+    ## Deal with command line arguments
+    parser = argparse.ArgumentParser(description = "mqsub_throttled for batch SGE cluster job submission with submission limits")
+    ## add_argument("name", "(names)", metavar="exampleOfValue - best for optional", type=int, nargs="+", choices=[allowed,values], dest="nameOfVariableInArgsToSaveAs")
+    parser.add_argument("--file", metavar="batchfile", help = "Batchfile to process", type = str, required=True)
+    parser.add_argument("--chdir", metavar = "directory", help = "Change to the specified directory before creating job scripts and/or creating subdirectory (see --mkdir)", type = str, default=None)
+    parser.add_argument("--name", metavar = "jobname", help = "Specify the name of the job (if not specified then will be set to {}_job)".format(getpass.getuser()), type = str, default=None)
+    parser.add_argument("--nosubmit", help = "Do not submit jobs, just create scripts and print qsub commands", action = "store_true")
+    parser.add_argument("--maxJobs", metavar = "num_jobs", help = "Specify the maximum number of jobs to have in the queue at once. Maximum is {}".format(MAX_JOBS_HARD), type = int, default=0)
+    parser.add_argument("--mkdir", action = "store_true", help = "Create a subdirectory to put scripts in using the job's name")
+    parser.add_argument("--qsub", metavar = '"qsub args"', help = "Arguments to be passed to the qsub command (see man qsub for more details)", type = str, default=None)
+    parser.add_argument("--refresh", metavar = "num_minutes", help = "Set the number of minutes to wait between checking how many jobs are in queue (default = 2)", type = int, default=2)
+    
+    parser.add_argument("--debug", action = "store_true", dest = "DEBUG", help = "Flag for setting debug/test state.")
+    parser.add_argument("-v", "--verbose", action = "store_true", dest = "VERB", help = "Flag for setting verbose output.")
+    
+    return parser.parse_args()
+
+
+def getQsub():
+    
+    cmd = "which qsub;"
+    call = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+    (res, err) = call.communicate()
+    if err.decode('ascii') != "":
+        sys.exit("qsub command not in path, are you on the cluster?")
+    else:
+        global QSUB_CMD
+        QSUB_CMD = res.decode("ascii")
+        
+        
+def readScriptFile():
+    
+    try:
+        bf = open(FILENAME, "r")
+    except IOError:
+        sys.exit("Error opening file: {}".format(FILENAME))
+    
+    batch = bf.readlines()
+    
+    bf.close()
+    
+    return batch
+    
+def numJobsInQueue():
+    '''returns number of jobs currently running or in queue'''
+    
+    cmd = "qstat -u {} -r | grep jobname | wc -l;".format(getpass.getuser())
+    call = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (res, err) = call.communicate()
+    if err.decode('ascii') != "":
+        sys.exit("Error in getting running jobs: {}".format(cmd))
+    else:
+        numRunning = int(res.decode("ascii"))
+        
+    return numRunning
+    
+
+''' Main '''
+    
+if __name__ == "__main__":
+    
+    if VERB: print("Getting arguments from command line.")
+    args = getArgs()
+    
+    ## Set Global Vars
+    DEBUG = args.DEBUG
+    VERB = args.VERB
+    
+    ## get the qsub command
+    if VERB: print("Checking qsub.")
+    getQsub()
+    
+    ## Assign commandline args
+    DIRNAME = args.chdir
+    FILENAME = args.file
+    JOBNAME = args.name
+    MKDIR = args.mkdir
+    NOSUBMIT = args.nosubmit
+    QSUB_ARGS = args.qsub
+    MAX_JOBS = args.maxJobs
+    if MAX_JOBS > MAX_JOBS_HARD:
+        MAX_JOBS = MAX_JOBS_HARD
+        print("You requested more than {} jobs in the queue. Please consider running less jobs at once - the system becomes unstable if there are too many jobs in the queue. The max number of jobs in the queue has been set to {}. Thanks!".format(MAX_JOBS_HARD, MAX_JOBS))
+    elif MAX_JOBS == 0:
+        MAX_JOBS = MAX_JOBS_HARD
+    REFRESH = args.refresh
+    
+    ## read in script file
+    if VERB: print("Reading batch script file.")
+    batch = readScriptFile()
+    
+    ## set jobname if not provided
+    if VERB: print("Setting jobname.")
+    if JOBNAME == None:
+        JOBNAME = getpass.getuser() + "_job"
+    
+    ## change directory if given
+    if VERB: print("Setting directory, if requested.")
+    if DIRNAME:
+        try:
+            os.chdir(DIRNAME)
+        except OSError:
+            sys.exit("Cannot change into directory: {} - does it exist?".format(DIRNAME))
+    
+    ## make a subdirectory with jobname as name if --mkdir specified
+    if VERB: print("Creating subdirectory, if requested.")
+    if MKDIR:
+        cwd = os.getcwd()
+        try:
+            os.mkdir(JOBNAME)
+            os.chdir(JOBNAME)
+        except OSError:
+            sys.exit("Cannot create directory: {}/{}".format(cwd, JOBNAME))
+    
+    ## check for SGE
+    sge = 0
+    if QSUB_CMD.find("sge") != -1:   ## if it is the path
+        sge = 1
+    
+    cwd = os.getcwd()
+    
+    ## process jobs
+    count = 0
+    line = 0
+    
+    ## process jobs, only submitting the max number
+    if VERB: print("Beginning to process jobs.")
+    numInQ = 0  ## initialize with nothing in queue
+    while line < len(batch):
+    
+        ## check if allowed to submit another job
+        numInQ = numJobsInQueue()
+        if VERB: print("There are currently {} jobs in the queue.".format(numInQ))
+        if numInQ >= MAX_JOBS and not NOSUBMIT:
+            print("Too many jobs currently in the queue ({}).".format(numInQ))
+            print("Waiting {} minutes before checking again...".format(REFRESH))
+            time.sleep(60*REFRESH)
+        
+        else:
+            job = batch[line]
+            line += 1
+            ## check for empty line
+            if job == "\n":
+                continue
+            else:
+                count += 1
+            
+                job = job.rstrip()
+                if not job.endswith(";"):
+                    job += ";"
+                    print("It looks like you forgot to end your command with a ';'. It has been added for you.")
+                
+                jobfile = os.path.join(cwd, "{}.{}.sh".format(JOBNAME, count))
+                
+                if VERB: print("Creating individual job script.")
+                try:
+                    jf = open(jobfile, "w")
+                except IOError:
+                    sys.exit("Error creating job script: {}".format(jobfile))
+                
+                jf.write("#! /bin/sh\n\n")
+                jf.write("# Automatically generated by mqsub_throttled\n\n")
+                
+                if sge:
+                    jf.write("#$ -S /bin/sh\n\n")
+                
+                jf.write(job)
+                jf.write("\n")
+                jf.close()
+                
+                os.chmod(jobfile,0o755)
+                
+                if QSUB_ARGS != None:
+                    QSUB_CMD = "qsub {} {}".format(QSUB_ARGS, jobfile)
+                else:
+                    QSUB_CMD = "qsub {}".format(jobfile)
+                
+                if VERB: print("Creating qsub command to submit job to cluster.")
+                if NOSUBMIT:
+                    print(QSUB_CMD)
+                else:
+                    call = subprocess.Popen(QSUB_CMD, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell = True)
+                    (res, err) = call.communicate()
+                    if err.decode('ascii') != "":
+                        sys.exit("Error submitting job: {}".format(QSUB_CMD))
+                    else:
+                        print(res.decode("ascii"))
+                    
+    print("All jobs have been submitted.")
+
+    
