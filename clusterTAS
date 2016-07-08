@@ -27,6 +27,7 @@ import os
 import subprocess
 import errno
 import shutil
+from collections import deque
 
 
 ## Hardcoded Vars
@@ -74,7 +75,8 @@ curGenesisSpace = 0             ## amount of space available on genesis at each 
 runningFileSize = 0             ## amount of space potentially used by files currently running (bytes)
 apolloRunningJobs = set()       ## set of running apollo jobs (from qstat)
 genesisRunningJobs = set()      ## set of running genesis jobs (from qstat)
-toRun = {}                      ## set of jobs yet to be submitted. {jobname:[[files,to,transfer],"genesisScript"]}
+toRun = {}                      ## dict of jobs yet to be submitted. {jobname:[[files,to,transfer],"genesisScript"]}
+toRunKeys = deque()             ## list (queue) of job keys yet to be submitted. Maintains order of jobs.
 running = set()                 ## set of currently running jobs
 newCompleted = set()            ## set of newly completed jobs in each iteration
 complete = set()                ## set of jobs that have completed on apollo and genesis
@@ -380,7 +382,7 @@ if __name__ == "__main__":
     parser.add_argument("-L", "--leaveResults", action = "store_false", dest = "MOVERESULTS", 
                         help = "Flag for leaving results on Genesis filesystem.")
     parser.add_argument("-t", "--test", action = "store_true", dest = "TEST", 
-                        help = "Flag for setting test mode. Only one job will be submitted. \
+                        help = "Flag for setting test mode. Only first job will be submitted. \
                         Once complete, will prompt user to continue, or exit.")
     
     parser.add_argument("-d", "--debug", action = "store_true", dest = "DEBUG", 
@@ -433,6 +435,7 @@ if __name__ == "__main__":
                 sys.exit()
             
             toRun[scriptsLine[0]] = [transferLine, scriptsLine[1]]
+            toRunKeys.append(scriptsLine[0])
         
     if DEBUG: print("toRun looks like: \n{}".format(toRun))
     
@@ -534,7 +537,10 @@ if __name__ == "__main__":
         ###################
         
         elif not jobname:
-            jobToProcess = toRun.popitem()
+            #jobToProcess = toRun.popitem()
+            keyToProcess = toRunKeys.popleft()
+            jobToProcess = toRun[keyToProcess]
+            del toRun[keyToProcess]
             
             if DEBUG: print("jobToProcess = {}".format(jobToProcess))
             
