@@ -13,7 +13,7 @@ Vancouver, BC, Canada
 sbrown@bcgsc.ca  
 scottderekbrown@gmail.com  
 
-mqsub_throttled
+[mqsub_throttled](mqsub_throttled)
 ===============
 
 March 29, 2016
@@ -29,7 +29,7 @@ Usage: mqsub_throttled [-h] --file batchfile [--chdir directory]
 `mqsub_throttled -h` for more information.
 
 
-clusterTAS
+[clusterTAS](clusterTAS)
 ==========
 
 June 21, 2016
