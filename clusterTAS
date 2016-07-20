@@ -447,6 +447,9 @@ if __name__ == "__main__":
     
     if MAX_SPACE and MAX_SPACE > genesisSpace:
         logMessage("NOTE: Requested max space to use on Genesis ({} bytes) is more than is currently available ({} bytes). Max space set to total available space ({} bytes)".format(MAX_SPACE, genesisSpace, genesisSpace))
+    elif INFLATION and not MAX_SPACE:
+        ## Limit by space, but max space not given
+        MAX_SPACE = genesisSpace
     else:
         genesisSpace = MAX_SPACE
         curGenesisSpace = genesisSpace
@@ -544,9 +547,9 @@ if __name__ == "__main__":
             
             if DEBUG: print("jobToProcess = {}".format(jobToProcess))
             
-            jobname = jobToProcess[0]
-            files = jobToProcess[1][0]
-            genScript = jobToProcess[1][1]
+            jobname = keyToProcess
+            files = jobToProcess[0]
+            genScript = jobToProcess[1]
             
             if not genScript.endswith(";"):
                 genScript += ";"
