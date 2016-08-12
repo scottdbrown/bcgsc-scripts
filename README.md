@@ -36,13 +36,13 @@ June 21, 2016
 
 Analysis management script designed for use on GSC clusters.
 Use case: You have X files that you want to do analysis on using Genesis, and need to transfer
-          files to Genesis scratch space using Apollo, and want to manage jobs.
+          files to Genesis scratch space (default using Apollo), and want to manage jobs.
           Designed for situation where your Genesis scratch space is not large enough to hold
           all the files you want to analyze. This script will track and limit submissions
           depending on user criteria provided through command line arguments.
 ```
-Usage: clusterTAS [-h] [--genMem N] [--genQsub "qsub args"] [--maxJobs N]
-                  [--maxSpace N] [--noDate] [--refresh N]
+usage: clusterTAS [-h] [--genMem N] [--genQsub "qsub args"] [--maxJobs N]
+                  [--maxSpace N] [--noApollo] [--noDate] [--refresh N]
                   [--spaceInflationFactor N] [--startAtLine N] [-c] [-L] [-t]
                   [-d] [-v]
                   filesToTransfer scriptsToRun genesisWorkingDir
