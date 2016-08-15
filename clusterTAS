@@ -328,11 +328,11 @@ def getRunningJobs(cluster):
 
     return set(jobs)
 
-def logMessage(msg):
+def logMessage(msg, noPrint = False):
     log = open(os.path.join(LWD,LOG_FILE), "a")
     log.write("{}\n".format(msg))
     log.close()
-    print(msg.rstrip())
+    if not noPrint: print(msg.rstrip())
 
 if __name__ == "__main__":
 
@@ -690,7 +690,7 @@ if __name__ == "__main__":
                 response = ""
                 logMessage("TEST STATE: The job '{}' has been submitted. Check the result.".format(jobname))
                 while response not in ["c", "e"]:
-                    logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n")
+                    logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n", noPrint = True)
                     response = input("Do you want to [c]ontinue with remaining jobs, or [e]xit? ").lower()
                 logMessage("{}\n".format(response))
                 if response == "c":
