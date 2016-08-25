@@ -67,7 +67,7 @@ VERB = None                     ## Set verbose mode
 ## Initialize Vars
 
 GWD_CLEAN = False               ## if GWD is created by the program, and moving results once done, delete GWD when done.
-USE_APOLLO = False
+USE_APOLLO = False              ## boolean for using Apollo to transfer files
 doneRunning = False             ## boolean for when all jobs finished running on cluster
 doneSubmitting = False          ## boolean for when all jobs submitted to apollo
 fileSizes = {}                  ## dict of sizes of files * inflation factor. Key is job name
@@ -101,6 +101,18 @@ def processArgs(args):
     runFile = args.scriptsToRun
     if DEBUG: print("runFile = {}".format(runFile))
 
+    global LWD
+    LWD = args.localWorkingDir
+    ## make dir if it doesn't exist
+    try:
+        os.makedirs(LWD)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+    if os.listdir(os.path.join(LWD)) != []:
+        promptUserContinue("\nNOTE: {} is not empty. If clusterTAS has been run here before, file collisions or overwriting may occur for shared jobnames.".format(LWD))
+    if DEBUG: print("LWD = {}".format(LWD))
+
     ## check for "/genesis" at start of genesisWorkingDir.
     global GWD
     global GWD_CLEAN
@@ -121,18 +133,6 @@ def processArgs(args):
         promptUserContinue("\nNOTE: {} is not empty. Performing analysis here may result in an error from file collisions.".format(os.path.join("/genesis",GWD[1:])))
     if DEBUG: print("GWD = {}".format(GWD))
     if DEBUG: print("GWD_CLEAN = {}".format(GWD_CLEAN))
-
-    global LWD
-    LWD = args.localWorkingDir
-    ## make dir if it doesn't exist
-    try:
-        os.makedirs(LWD)
-    except OSError as exception:
-        if exception.errno != errno.EEXIST:
-            raise
-    if os.listdir(os.path.join(LWD)) != []:
-        promptUserContinue("\nNOTE: {} is not empty. If clusterTAS has been run here before, file collisions or overwriting may occur for shared jobnames.".format(LWD))
-    if DEBUG: print("LWD = {}".format(LWD))
 
     ## Create folder to hold transfer scripts
     try:
@@ -392,7 +392,7 @@ if __name__ == "__main__":
                         help = "Flag for leaving results on Genesis filesystem.")
     parser.add_argument("-t", "--test", action = "store_true", dest = "TEST",
                         help = "Flag for setting test mode. Only first job will be submitted. \
-                        Once complete, will prompt user to continue, or exit.")
+                        Will prompt user to continue, or exit.")
 
     parser.add_argument("-d", "--debug", action = "store_true", dest = "DEBUG",
                         help = "Flag for setting debug output.")
