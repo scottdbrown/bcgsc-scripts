@@ -526,7 +526,8 @@ if __name__ == "__main__":
             logMessage("Completed:\t{}".format(job))
 
         ## if want to move results to different directory and there are new completed jobs
-        while MOVERESULTS and len(newCompleted) > 0:
+        ## Changed 'while' to 'if' to avoid spending time moving results when new jobs can be submitted.
+        if MOVERESULTS and len(newCompleted) > 0:
             jobnameToMove = newCompleted.pop()
             logMessage("Moving {} to {}.".format(os.path.join("/genesis/", GWD[1:], jobnameToMove), os.path.join(LWD,RES_DEST_DIR)))
             try:
@@ -715,13 +716,14 @@ if __name__ == "__main__":
             files = None
             genScript = None
 
-        elif MAX_JOBS:
+        ## Go into WAIT unless there are jobs to move back
+        elif MAX_JOBS and MOVERESULTS and len(newCompleted) != 0:
             ## failed to submit next job because too many jobs
             if not doneSubmitting:
                 logMessage("Too many jobs in queue, will recheck every {} seconds.".format(REFRESH))
             WAIT = True
 
-        elif INFLATION:
+        elif INFLATION and MOVERESULTS and len(newCompleted) != 0:
             ## failed to submit next job because too little space
             if not doneSubmitting:
                 if VERB: logMessage("INITIAL free space on genesis: {} bytes.".format(genesisSpace))
