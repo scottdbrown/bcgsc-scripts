@@ -717,13 +717,13 @@ if __name__ == "__main__":
             genScript = None
 
         ## Go into WAIT unless there are jobs to move back
-        elif MAX_JOBS and MOVERESULTS and len(newCompleted) != 0:
+        elif MAX_JOBS and ((MOVERESULTS and len(newCompleted) == 0) or not MOVERESULTS):
             ## failed to submit next job because too many jobs
             if not doneSubmitting:
                 logMessage("Too many jobs in queue, will recheck every {} seconds.".format(REFRESH))
             WAIT = True
 
-        elif INFLATION and MOVERESULTS and len(newCompleted) != 0:
+        elif INFLATION and ((MOVERESULTS and len(newCompleted) == 0) or not MOVERESULTS):
             ## failed to submit next job because too little space
             if not doneSubmitting:
                 if VERB: logMessage("INITIAL free space on genesis: {} bytes.".format(genesisSpace))
