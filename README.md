@@ -61,4 +61,18 @@ Logfile of all output created. Additionally, tracks environment information:
     Time: 2016/06/21 11:13:14
 ```
 
+[fastaToFastq.py](fastaToFastq.py)
+-----------------
+
+September 19, 2016
+
+Simple script to convert a file in fasta format into "pseudo-fastq" format by giving arbitrary "H" quality scores.
+
+```
+usage: fastaToFastq.py [-h] [-d] [-v] fastaFile fastqFile
+```
+`fastaToFastq.py -h` for more information.
+
+Created for converting capillary sequencing data files into fastq format for running in MiTCR, with -quality 0 flag used.
+(MiTCR requires files to be in fastq format even if quality information is not used).
 
