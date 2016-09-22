@@ -81,6 +81,7 @@ toRunKeys = deque()             ## list (queue) of job keys yet to be submitted.
 running = set()                 ## set of currently running jobs
 newCompleted = set()            ## set of newly completed jobs in each iteration
 complete = set()                ## set of jobs that have completed on apollo and genesis
+completeQ = set()               ## set of jobs that need to be processed before being "complete"
 stats = ""                      ## string to hold running stats for each iteration
 statsPrev = ""                  ## string to hold running stats for previous iteration
 WAIT = False                    ## boolean to wait REFRESH time
@@ -418,6 +419,8 @@ if __name__ == "__main__":
     log.write("-----------------------\n\n")
     log.close()
 
+
+
     ## READ IN FILES TO TRANSFER
     transfer = readFile(transferFile)
 
@@ -501,8 +504,11 @@ if __name__ == "__main__":
         running -= newCompleted
         if DEBUG: print("Updated running = {}".format(running))
 
-        ## add completed jobs to completed list
-        complete |= newCompleted
+        for job in newCompleted:
+            logMessage("Computation completed:\t{}".format(job))
+
+        ## add completed jobs to the completed queue
+        completeQ |= newCompleted
 
         if not firstjob:
             if VERB:
@@ -510,31 +516,32 @@ if __name__ == "__main__":
                     logMessage("There are currently {} submitted jobs on Apollo and {} submitted jobs on Genesis.".format(len(apolloRunningJobs), len(genesisRunningJobs)))
                 else:
                     logMessage("There are currently {} submitted jobs on Genesis.".format(len(genesisRunningJobs)))
+            if VERB: logMessage("{} jobs have computation done but need to be cleaned up.".format(len(completeQ)))
             if VERB: logMessage("{} jobs have completed.".format(len(complete)))
             if VERB: logMessage("There are {} jobs remaining to be submitted.".format(len(toRun)))
 
 
-        ## if limiting by space, free up space
-        if INFLATION:
-            for jn in newCompleted:
+        ## if there are jobs that are done but need to be cleaned up
+        if len(completeQ) > 0:
+            jn = completeQ.pop()    ## shortens completeQ
+
+            if INFLATION:
+                ## free space
                 curGenesisSpace += fileSizes[jn]
                 if not MOVERESULTS:
                     ## if not moving results off of Genesis, need to see how much space results take
                     curGenesisSpace -= getJobDirSize(os.path.join("/genesis",GWD[1:],jn))
+            if MOVERESULTS:
+                ## move it
+                logMessage("Moving {} to {}.".format(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR)))
+                try:
+                    shutil.move(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR))
+                except OSError as exception:
+                    logMessage("ERROR: {}".format(exception))
+                    sys.exit("Exiting.")
 
-        for job in newCompleted:
-            logMessage("Completed:\t{}".format(job))
-
-        ## if want to move results to different directory and there are new completed jobs
-        ## Changed 'while' to 'if' to avoid spending time moving results when new jobs can be submitted.
-        if MOVERESULTS and len(newCompleted) > 0:
-            jobnameToMove = newCompleted.pop()
-            logMessage("Moving {} to {}.".format(os.path.join("/genesis/", GWD[1:], jobnameToMove), os.path.join(LWD,RES_DEST_DIR)))
-            try:
-                shutil.move(os.path.join("/genesis/", GWD[1:], jobnameToMove), os.path.join(LWD,RES_DEST_DIR))
-            except OSError as exception:
-                logMessage("ERROR: {}".format(exception))
-                sys.exit("Exiting.")
+            complete.add(jn)    ## puts job into complete set.
+            logMessage("Completed:\t{}".format(jn))
 
 
         ###################
@@ -542,14 +549,18 @@ if __name__ == "__main__":
         ###################
 
         ## Check if done running
-        if len(apolloRunningJobs) == 0 and len(genesisRunningJobs) == 0 and doneSubmitting:
+        if len(apolloRunningJobs) == 0 and len(genesisRunningJobs) == 0 and doneSubmitting and len(completeQ) == 0:
             doneRunning = True
             break
 
         ## Check if waiting for jobs to finish
-        elif doneSubmitting:
+        elif doneSubmitting and len(completeQ) == 0:
             logMessage("All jobs submitted, {} jobs still running. Waiting {} seconds to check for completion.".format(len(running),REFRESH))
-            time.sleep(REFRESH)
+            WAIT = True
+
+        ## Check if need to loop back to process more jobs in completeQ
+        elif len(completeQ) > 0:
+            WAIT = False
 
         ###################
         ## Get next job  ##
@@ -610,6 +621,8 @@ if __name__ == "__main__":
             else:
                 jobDest = os.path.join("/genesis/", GWD[1:])
 
+            ascriptHeader = "#! /bin/sh\n\n#$ -S /bin/sh\n\n"
+
             for f in files:
                 ascript += "/bin/cp -p {} {}; ".format(f, jobDest)
 
@@ -623,7 +636,7 @@ if __name__ == "__main__":
 
             ## write transfer script
             transferScript = open(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)), "w")
-            transferScript.write(ascript)
+            transferScript.write("{}{}".format(ascriptHeader, ascript))
             transferScript.close()
 
             os.chmod(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)),0o755)
@@ -717,13 +730,13 @@ if __name__ == "__main__":
             genScript = None
 
         ## Go into WAIT unless there are jobs to move back
-        elif MAX_JOBS and ((MOVERESULTS and len(newCompleted) == 0) or not MOVERESULTS):
+        elif MAX_JOBS and len(completeQ) == 0:
             ## failed to submit next job because too many jobs
             if not doneSubmitting:
                 logMessage("Too many jobs in queue, will recheck every {} seconds.".format(REFRESH))
             WAIT = True
 
-        elif INFLATION and ((MOVERESULTS and len(newCompleted) == 0) or not MOVERESULTS):
+        elif INFLATION and len(completeQ) == 0:
             ## failed to submit next job because too little space
             if not doneSubmitting:
                 if VERB: logMessage("INITIAL free space on genesis: {} bytes.".format(genesisSpace))
@@ -732,6 +745,7 @@ if __name__ == "__main__":
             WAIT = True
 
         if WAIT:
+            print("Waiting {} seconds...".format(REFRESH))
             time.sleep(REFRESH)
 
     if DEBUG: print("Checking if can delete GWD.")
