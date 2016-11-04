@@ -37,7 +37,7 @@ USER = getpass.getuser()        ## Username
 LOG_FILE = "clusterTAS_{}.log".format(time.strftime("%y%m%d-%H%M%S"))
 TRANS_DEST_DIR = "transfer_scripts"
 RES_DEST_DIR = "analysis_results"
-MAX_OSCALL_TRIES = 5            ## Number of tries that a system call can fail before aborting
+MAX_OSCALL_TRIES = 10            ## Number of tries that a system call can fail before aborting
 
 ## Global Vars
 
