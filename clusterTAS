@@ -361,19 +361,19 @@ def logMessage(msg, noPrint = False):
     if not noPrint: print(msg.rstrip())
 
 def abortClusterTAS():
-    running_file = open(os.path.join(LWD,"{}.abortRunning".format(LOG_FILE)))
+    running_file = open(os.path.join(LWD,"{}.abortRunning".format(LOG_FILE)), "w")
     running_file.write("\n".join(running))
     running_file.close()
 
-    newCompleted_file = open(os.path.join(LWD,"{}.abortNewCompleted".format(LOG_FILE)))
+    newCompleted_file = open(os.path.join(LWD,"{}.abortNewCompleted".format(LOG_FILE)), "w")
     newCompleted_file.write("\n".join(newCompleted))
     newCompleted_file.close()
 
-    completeQ_file = open(os.path.join(LWD,"{}.abortCompleteQ".format(LOG_FILE)))
+    completeQ_file = open(os.path.join(LWD,"{}.abortCompleteQ".format(LOG_FILE)), "w")
     completeQ_file.write("\n".join(completeQ))
     completeQ_file.close()
 
-    complete_file = open(os.path.join(LWD,"{}.abortComplete".format(LOG_FILE)))
+    complete_file = open(os.path.join(LWD,"{}.abortComplete".format(LOG_FILE)), "w")
     complete_file.write("\n".join(complete))
     complete_file.close()
 
