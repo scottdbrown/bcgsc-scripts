@@ -364,17 +364,15 @@ def abortClusterTAS():
     running_file.write("\n".join(running))
     running_file.close()
 
-    newCompleted_file = open(os.path.join(LWD,"{}.abortNewCompleted".format(LOG_FILE)), "w")
-    newCompleted_file.write("\n".join(newCompleted))
-    newCompleted_file.close()
-
-    completeQ_file = open(os.path.join(LWD,"{}.abortCompleteQ".format(LOG_FILE)), "w")
-    completeQ_file.write("\n".join(completeQ))
-    completeQ_file.close()
+    computeDone_file = open(os.path.join(LWD,"{}.abortComputeDone".format(LOG_FILE)), "w")
+    computeDone_file.write("\n".join(newCompleted + completeQ))
+    computeDone_file.close()
 
     complete_file = open(os.path.join(LWD,"{}.abortComplete".format(LOG_FILE)), "w")
     complete_file.write("\n".join(complete))
     complete_file.close()
+
+    
 
 
 
@@ -844,5 +842,5 @@ if __name__ == "__main__":
             os.rmdir(os.path.join("/genesis", GWD[1:]))
         except OSError as exception:
             logMessage("ERROR: {}".format(exception))
-            sys.exit(0)
+            sys.exit(1)
     logMessage("All jobs have completed. Closing.")
