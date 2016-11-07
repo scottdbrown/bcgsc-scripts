@@ -642,7 +642,7 @@ if __name__ == "__main__":
             ## if not loaded ##
             ###################
 
-            elif not jobname:
+            elif not jobname and not doneSubmitting:
                 #jobToProcess = toRun.popitem()
                 keyToProcess = toRunKeys.popleft()
                 jobToProcess = toRun[keyToProcess]
