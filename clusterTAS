@@ -372,7 +372,7 @@ def abortClusterTAS():
     complete_file.write("\n".join(complete))
     complete_file.close()
 
-    
+
 
 
 
@@ -655,7 +655,7 @@ if __name__ == "__main__":
                 if not genScript.endswith(";"):
                     genScript += ";"
 
-                logMessage("Queued for processing:\t{}.".format(jobname))
+                logMessage("Queued for preparation:\t{}.".format(jobname))
 
                 if DEBUG: print("jobname = {}".format(jobname))
                 if DEBUG: print("files = {}".format(files))
