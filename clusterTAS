@@ -591,7 +591,8 @@ if __name__ == "__main__":
                 if VERB: logMessage("{} jobs have computation done but need to be cleaned up.".format(len(completeQ)))
                 if VERB: logMessage("{} jobs have completed.".format(len(complete)))
                 if VERB: logMessage("There are {} jobs remaining to be submitted.".format(len(toRun)))
-
+            if not VERB:
+                logMessage("{} jobs submitted, {} jobs complete, {} jobs remaining.".format(len(apolloRunningJobs)+len(genesisRunningJobs), len(complete), len(toRun))
 
             ## if there are jobs that are done but need to be cleaned up
             if len(completeQ) > 0:
