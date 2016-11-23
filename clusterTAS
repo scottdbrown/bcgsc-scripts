@@ -121,7 +121,7 @@ def processArgs(args):
         GWD = args.genesisWorkingDir[8:]
     elif not args.genesisWorkingDir.startswith("/"):
         logMessage("ERROR: Genesis working directory must be supplied as absolute path from root (starting with a '/').")
-        sys.exit()
+        sys.exit("Invalid Genesis working directory provided.")
     else:
         GWD = args.genesisWorkingDir
     try:
@@ -166,7 +166,7 @@ def processArgs(args):
     global MAX_SPACE
     if args.maxSpace and not args.spaceInflationFactor:
         logMessage("\nERROR: If --maxSpace is used, --spaceInflationFactor must be provided.")
-        sys.exit()
+        sys.exit("ERROR: If --maxSpace is used, --spaceInflationFactor must be provided.")
     MAX_SPACE = args.maxSpace
     if DEBUG: print("MAX_SPACE = {}".format(MAX_SPACE))
 
@@ -187,7 +187,7 @@ def processArgs(args):
         promptUserContinue("\nNOTE: Analysis results will be moved to {}, but you have not set deletion of transferred file (-c). Please be aware that this will result in the transfered file being moved to {} (unless it is removed by the analysis script you submitted).".format(os.path.join(LWD,RES_DEST_DIR),os.path.join(LWD,RES_DEST_DIR)))
     if args.MOVERESULTS and not JOB_DIRS:
         logMessage("\nERROR: If moving analysis results to {}, JOB_DIRS must be True.".format(os.path.join(LWD,RES_DEST_DIR)))
-        sys.exit()
+        sys.exit("ERROR: If moving analysis results to {}, JOB_DIRS must be True.".format(os.path.join(LWD,RES_DEST_DIR)))
 
     if args.MOVERESULTS:
         try:
@@ -202,10 +202,10 @@ def processArgs(args):
     ## check not limiting by space AND number of jobs
     if args.maxJobs and args.spaceInflationFactor:
         logMessage("\nERROR: Please only use one of (--maxJobs, [--maxSpace, --spaceInflationFactor]).")
-        sys.exit()
+        sys.exit("ERROR: Please only use one of (--maxJobs, [--maxSpace, --spaceInflationFactor]).")
     if args.spaceInflationFactor and args.spaceInflationFactor <= 1:
         logMessage("Space Inflation Factor must be greater than 1. You entered {}.".factor(args.spaceInflationFactor))
-        sys.exit()
+        sys.exit("Space Inflation Factor must be greater than 1. You entered {}.".factor(args.spaceInflationFactor))
     if args.spaceInflationFactor and not args.MOVERESULTS and not args.CLEANUP:
         promptUserContinue("\nNOTE: You are limiting job submission on available space (--spaceInflationFactor), but are not moving results off of Genesis (-L) and are not deleting transfered files (!-c). This scenario will likely result in running out of space.")
     global INFLATION
@@ -238,7 +238,7 @@ def promptUserContinue(msg):
         response = input("Are you sure you want to continue (y/n)? ").lower()
     logMessage("{}\n".format(response))
     if response == "n":
-        sys.exit()
+        sys.exit("User ended.")
 
 def getFreeGenesisSpace(genDir):
     if genDir.startswith("/"):
@@ -254,7 +254,7 @@ def getFreeGenesisSpace(genDir):
         elif num_tries == MAX_OSCALL_TRIES:
             logMessage("Unable to complete system call. Aborting...")
             abortClusterTAS()
-            sys.exit(1)
+            sys.exit("Unable to get free Genesis space.")
         else:
             num_tries += 1
             logMessage("ERROR IN GETTING FREE GENESIS SPACE: {}\nError: {}".format(cmd, str(err.decode('ascii'))))
@@ -275,7 +275,7 @@ def spaceNeededForFile(file, inflation_factor):
         elif num_tries == MAX_OSCALL_TRIES:
             logMessage("Unable to complete system call. Aborting...")
             abortClusterTAS()
-            sys.exit(1)
+            sys.exit("Unable to get space needed for file to transfer.")
         else:
             num_tries += 1
             logMessage("ERROR IN GETTING FILE SIZE: {}\nError: {}".format(cmd, str(err.decode('ascii'))))
@@ -296,7 +296,7 @@ def getJobDirSize(jobDir):
         elif num_tries == MAX_OSCALL_TRIES:
             logMessage("Unable to complete system call. Aborting...")
             abortClusterTAS()
-            sys.exit(1)
+            sys.exit("Unable to get job directory size.")
         else:
             num_tries += 1
             logMessage("ERROR IN GETTING JOB DIR SIZE: {}\nError: {}".format(cmd, str(err.decode('ascii'))))
@@ -314,7 +314,7 @@ def readFile(filename):
                 filedat.append(line)
     except IOError:
         logMessage("Error opening file: {}".format(filename))
-        sys.exit()
+        sys.exit("Error opening file: {}".format(filename))
 
     return filedat
 
@@ -334,7 +334,7 @@ def getRunningJobs(cluster):
         elif num_tries == MAX_OSCALL_TRIES:
             logMessage("Unable to complete system call. Aborting...")
             abortClusterTAS()
-            sys.exit(1)
+            sys.exit("Unable to get running jobs on {}".format(cluster))
         else:
             num_tries += 1
             logMessage("ERROR IN RUNNING SSH COMMAND: {}\nError: {}".format(cmd, str(err.decode('ascii'))))
@@ -372,9 +372,47 @@ def abortClusterTAS():
     complete_file.write("\n".join(complete))
     complete_file.close()
 
+    logMessage("Resume at line {}.".format(len(transfer) - len(toRun)))
 
+def pauseState():
+    resp = ""
+    while resp not in ["c","q"]:
+        logMessage("cluserTAS is PAUSED")
+        logMessage("You can [c]ontinue, [q]uit, or [m]odify variables.")
+        resp = input().lower()
+        while resp not in ["c","q","m"]:
+            resp = input("You can [c]ontinue, [q]uit, or [m]odify variables.\n").lower()
+        if resp == "m":
+            logMessage("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
+            mod = input()
+            while mod not in [1,2,3,4]:
+                mod = input()"Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB)
+            if mod == 1:
+                ## update maxJobs
+                logMessage("Enter maximum jobs to be run concurrently.\n")
+                mj = input()
+                while not mj.isnumeric() and mj > MAX_JOBS_HARD:
+                    if mj.isnumeric():
+                        logMessage("Number entered is too high. Max allowed is {}.".format(MAX_JOBS_HARD))
+                    rs = input("Enter frequency for REFRESH (seconds)\n")
+            elif mod == 2:
+                ## update REFRESH
+                logMessage("Enter frequency for REFRESH (seconds)\n")
+                rs = input()
+                while not rs.isnumeric():
+                    rs = input("Enter frequency for REFRESH (seconds)\n")
+                REFRESH = rs
+                logMessage("REFRESH set to {}".format(REFRESH))
+            elif mod == 3:
+                ## update DEBUG
+                DEBUG = not DEBUG
+                logMessage("DEBUG set to {}".format(DEBUG))
+            elif mod == 4:
+                ## update VERB
+                VERB = not VERB
+                logMessage("VERB set to {}".format(VERB))
 
-
+    return resp
 
 if __name__ == "__main__":
 
@@ -500,7 +538,7 @@ if __name__ == "__main__":
     ## check that # files and # scripts match
     if len(transfer) != len(scripts):
         logMessage("ERROR: Number of entries in Files to Transfer and Scripts to Run does not match.")
-        sys.exit()
+        sys.exit("ERROR: Number of entries in Files to Transfer and Scripts to Run does not match.")
 
     ## Set up toRun dict.
     for i in range(0, len(transfer)):
@@ -510,11 +548,11 @@ if __name__ == "__main__":
 
             if scriptsLine[0] in toRun:
                 logMessage("ERROR: Non-unique jobname given to line {} of Scripts to Run: {}\nPlease make sure all jobs have a unique name.".format(i + 1, scriptsLine[0]))
-                sys.exit()
+                sys.exit("ERROR: Non-unique jobname given to line {} of Scripts to Run: {}\nPlease make sure all jobs have a unique name.".format(i + 1, scriptsLine[0]))
 
             if " " in scriptsLine[0] or "." in scriptsLine[0] or ":" in scriptsLine[0]:
                 logMessage("ERROR: Jobname cannot contain spaces ( ), periods (.), or colons (:) - {}".format(scriptsLine[0]))
-                sys.exit()
+                sys.exit("ERROR: Jobname cannot contain spaces ( ), periods (.), or colons (:) - {}".format(scriptsLine[0]))
 
             toRun[scriptsLine[0]] = [transferLine, scriptsLine[1]]
             toRunKeys.append(scriptsLine[0])
@@ -554,280 +592,292 @@ if __name__ == "__main__":
 
         firstjob = True
         while not doneRunning:
+            try:    ## Catches KeyboardInterrupt and pauses loop.
+                ######################
+                ## Get stat updates ##
+                ######################
 
-            ######################
-            ## Get stat updates ##
-            ######################
-
-            ## Update what is running and what has completed
-            if USE_APOLLO:
-                apolloRunningJobs = getRunningJobs("apollo")
-            else:
-                apolloRunningJobs = set()
-            genesisRunningJobs = getRunningJobs("genesis")
-
-            if DEBUG: print("apolloRunningJobs = {}".format(apolloRunningJobs))
-            if DEBUG: print("genesisRunningJobs = {}".format(genesisRunningJobs))
-
-            ## get newly completed jobs
-            if DEBUG: print("running = {}".format(running))
-            newCompleted = running - (apolloRunningJobs | genesisRunningJobs)
-            if DEBUG: print("newCompleted = {}".format(newCompleted))
-            running -= newCompleted
-            if DEBUG: print("Updated running = {}".format(running))
-
-            for job in newCompleted:
-                logMessage("Computation completed:\t{}".format(job))
-
-            ## add completed jobs to the completed queue
-            completeQ |= newCompleted
-
-            if not firstjob:
-                if VERB:
-                    if USE_APOLLO:
-                        logMessage("There are currently {} submitted jobs on Apollo and {} submitted jobs on Genesis.".format(len(apolloRunningJobs), len(genesisRunningJobs)))
-                    else:
-                        logMessage("There are currently {} submitted jobs on Genesis.".format(len(genesisRunningJobs)))
-                if VERB: logMessage("{} jobs have computation done but need to be cleaned up.".format(len(completeQ)))
-                if VERB: logMessage("{} jobs have completed.".format(len(complete)))
-                if VERB: logMessage("There are {} jobs remaining to be submitted.".format(len(toRun)))
-            if not VERB:
-                logMessage("{} jobs submitted, {} jobs complete, {} jobs remaining.".format(len(apolloRunningJobs)+len(genesisRunningJobs), len(complete), len(toRun)))
-
-            ## if there are jobs that are done but need to be cleaned up
-            if len(completeQ) > 0:
-                jn = completeQ.pop()    ## shortens completeQ
-
-                if INFLATION:
-                    ## free space
-                    curGenesisSpace += fileSizes[jn]
-                    if not MOVERESULTS:
-                        ## if not moving results off of Genesis, need to see how much space results take
-                        curGenesisSpace -= getJobDirSize(os.path.join("/genesis",GWD[1:],jn))
-                if MOVERESULTS:
-                    ## move it
-                    logMessage("Moving {} to {}.".format(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR)))
-                    try:
-                        shutil.move(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR))
-                    except OSError as exception:
-                        logMessage("ERROR: {}".format(exception))
-                        abortClusterTAS()
-                        sys.exit(1)
-
-                complete.add(jn)    ## puts job into complete set.
-                logMessage("Completed:\t{}".format(jn))
-
-                ## Check if need to loop back to process more jobs in completeQ
-                if len(completeQ) > 0:
-                    WAIT = False
-
-
-            ###################
-            ## Check if done ##
-            ###################
-
-            ## Check if done running
-            if len(apolloRunningJobs) == 0 and len(genesisRunningJobs) == 0 and doneSubmitting and len(completeQ) == 0:
-                doneRunning = True
-                break
-
-            ## Check if waiting for jobs to finish
-            elif doneSubmitting and len(completeQ) == 0:
-                logMessage("All jobs submitted, {} jobs still running. Waiting {} seconds to check for completion.".format(len(running),REFRESH))
-                WAIT = True
-
-            ###################
-            ## Get next job  ##
-            ## if not loaded ##
-            ###################
-
-            elif not jobname and not doneSubmitting:
-                #jobToProcess = toRun.popitem()
-                keyToProcess = toRunKeys.popleft()
-                jobToProcess = toRun[keyToProcess]
-                del toRun[keyToProcess]
-
-                if DEBUG: print("jobToProcess = {}".format(jobToProcess))
-
-                jobname = keyToProcess
-                files = jobToProcess[0]
-                genScript = jobToProcess[1]
-
-                if not genScript.endswith(";"):
-                    genScript += ";"
-
-                logMessage("Queued for preparation:\t{}.".format(jobname))
-
-                if DEBUG: print("jobname = {}".format(jobname))
-                if DEBUG: print("files = {}".format(files))
-                if DEBUG: print("genScript = {}".format(genScript))
-
-                ## Get file sizes for this job
-                if INFLATION:
-                    fileSizes[jobname] = 0
-                    for f in files:
-                        fileSizes[jobname] += spaceNeededForFile(f, INFLATION)
-                    if VERB: logMessage("Job {} requires {} bytes.".format(jobname,fileSizes[jobname]))
-
-
-            ######################
-            ## CHECK IF ALLOWED ##
-            ## PROCESS NEXT JOB ##
-            ######################
-
-            ## Three cases:
-            ## 1 - not limiting by number of jobs or space
-            ## 2 - limiting by number of jobs, and a job can be added
-            ## 3 - limiting by space, and there is space left.
-            if not doneSubmitting and ((not MAX_JOBS and not INFLATION) or (MAX_JOBS and len(apolloRunningJobs) + len(genesisRunningJobs) < MAX_JOBS) or (INFLATION and curGenesisSpace - fileSizes[jobname] > 0)):
-
-                WAIT = False
-
-                logMessage("Preparing:\t{}.".format(jobname))
-
-                ## prepare jobs
-                ## make transfer script
-                ascript = ""
-                jobDest = ""
-
-                if JOB_DIRS:  ## if want separate dir for each job
-                    jobDest = os.path.join("/genesis/", GWD[1:], jobname)
-                    ## note GWD[1:] to remove the leading /
-                    if DEBUG: print("jobDest = {}".format(jobDest))
-                else:
-                    jobDest = os.path.join("/genesis/", GWD[1:])
-
-                ascriptHeader = "#! /bin/sh\n\n#$ -S /bin/sh\n\n"
-
-                for f in files:
-                    ascript += "/bin/cp -p {} {}; ".format(f, jobDest)
-
-                ascript += "ssh {}@genesis.bcgsc.ca 'cd {}; source /etc/profile.d/sge.sh; qsub {} {} {}.sh;';\n".format(USER, jobDest.replace("/genesis", ""), QSUB_MEM, GEN_QSUB, jobname)
-
-                if DEBUG:
-                    if USE_APOLLO:
-                        print("Transfer script to be submitted on Apollo: \"{}\"".format(ascript))
-                    else:
-                        print("Transfer script to be submitted on {}".format(os.uname()[1]))
-
-                ## write transfer script
-                transferScript = open(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)), "w")
-                transferScript.write("{}{}".format(ascriptHeader, ascript))
-                transferScript.close()
-
-                os.chmod(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)),0o755)
-
-                ## make genesis script
-                gscript = ""
-                genDir = jobDest.replace("/genesis", "")
-
-                gscriptHeader = "#! /bin/sh\n\n#Automatically generated by clusterTAS\n\n#$ -S /bin/sh\n\n"
-
-                if DATE:
-                    gscript += "date; "
-                gscript += "cd {}; ".format(genDir)
-                gscript += genScript
-                if CLEANUP:
-                    for f in files:
-                        f2remove = os.path.basename(f)
-                        gscript += " /bin/rm {};".format(f2remove)
-                if DATE:
-                    gscript += " date;"
-
-                ## write genesis script
-                if JOB_DIRS:
-                    try:
-                        os.makedirs(os.path.join("/genesis", GWD[1:], jobname))
-                    except OSError as exception:
-                        if exception.errno != errno.EEXIST:
-                            raise
-
-                if DEBUG: print("Analysis script to be submitted on Genesis: \"{}\"".format(gscript))
-
-                genesisScript = open(os.path.join(jobDest, "{}.sh".format(jobname)), "w")
-                genesisScript.write("{}{}".format(gscriptHeader, gscript))
-                genesisScript.close()
-
-                os.chmod(os.path.join(jobDest, "{}.sh".format(jobname)),0o755)
-
-                ## submit transfer job
-                logMessage("Submitting:\t{}.".format(jobname))
+                ## Update what is running and what has completed
                 if USE_APOLLO:
-                    subCmd = "ssh {}@apollo.bcgsc.ca 'cd {}; qsub -q thosts.q -P transfer {}.sh;'".format(USER, os.path.join(LWD, TRANS_DEST_DIR), jobname)
+                    apolloRunningJobs = getRunningJobs("apollo")
                 else:
-                    subCmd = "cd {}; sh {}.sh;".format(os.path.join(LWD, TRANS_DEST_DIR), jobname)
-                VALID_COM = False
-                num_tries = 0
-                while not VALID_COM:
-                    call = subprocess.Popen(subCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                    (res, err) = call.communicate()
-                    if err.decode('ascii') == "":
-                        VALID_COM = True
-                    elif num_tries == MAX_OSCALL_TRIES:
-                        logMessage("Unable to complete system call. Aborting...")
-                        abortClusterTAS()
-                        sys.exit(1)
-                    else:
-                        num_tries += 1
-                        logMessage("ERROR SUBMITTING TRANSFER SCRIPT!\nError: {}".format(str(err.decode('ascii'))))
-                        logMessage("Waiting 1 minute to try again...")
-                        time.sleep(60)
+                    apolloRunningJobs = set()
+                genesisRunningJobs = getRunningJobs("genesis")
 
-                ## if need to track, add submitted job to list.
+                if DEBUG: print("apolloRunningJobs = {}".format(apolloRunningJobs))
+                if DEBUG: print("genesisRunningJobs = {}".format(genesisRunningJobs))
 
-                running.add(jobname)
-                if INFLATION:
-                    curGenesisSpace -= fileSizes[jobname]
+                ## get newly completed jobs
+                if DEBUG: print("running = {}".format(running))
+                newCompleted = running - (apolloRunningJobs | genesisRunningJobs)
+                if DEBUG: print("newCompleted = {}".format(newCompleted))
+                running -= newCompleted
+                if DEBUG: print("Updated running = {}".format(running))
 
-                ## If in test mode and first job has been submitted.
-                if TEST and firstjob:
-                    ## check with user to continue or not
-                    response = ""
-                    logMessage("TEST STATE: The job '{}' has been submitted. Check the result.".format(jobname))
-                    while response not in ["c", "e"]:
-                        logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n", noPrint = True)
-                        response = input("Do you want to [c]ontinue with remaining jobs, or [e]xit? ").lower()
-                    logMessage("{}\n".format(response))
-                    if response == "c":
-                        TEST = False
-                        jobname = None
-                        files = None
-                        genScript = None
+                for job in newCompleted:
+                    logMessage("Computation completed:\t{}".format(job))
 
-                    elif response == "e":
-                        logMessage("Exiting")
-                        sys.exit()
+                ## add completed jobs to the completed queue
+                completeQ |= newCompleted
 
-                ## if toRun is empty, done submitting.
-                if len(toRun) == 0:
-                    doneSubmitting = True
+                if not firstjob:
+                    if VERB:
+                        if USE_APOLLO:
+                            logMessage("There are currently {} submitted jobs on Apollo and {} submitted jobs on Genesis.".format(len(apolloRunningJobs), len(genesisRunningJobs)))
+                        else:
+                            logMessage("There are currently {} submitted jobs on Genesis.".format(len(genesisRunningJobs)))
+                    if VERB: logMessage("{} jobs have computation done but need to be cleaned up.".format(len(completeQ)))
+                    if VERB: logMessage("{} jobs have completed.".format(len(complete)))
+                    if VERB: logMessage("There are {} jobs remaining to be submitted.".format(len(toRun)))
+                if not VERB:
+                    logMessage("{} jobs submitted, {} jobs complete, {} jobs remaining.".format(len(apolloRunningJobs)+len(genesisRunningJobs), len(complete), len(toRun)))
+
+                ## if there are jobs that are done but need to be cleaned up
+                if len(completeQ) > 0:
+                    jn = completeQ.pop()    ## shortens completeQ
+
+                    if INFLATION:
+                        ## free space
+                        curGenesisSpace += fileSizes[jn]
+                        if not MOVERESULTS:
+                            ## if not moving results off of Genesis, need to see how much space results take
+                            curGenesisSpace -= getJobDirSize(os.path.join("/genesis",GWD[1:],jn))
+                    if MOVERESULTS:
+                        ## move it
+                        logMessage("Moving {} to {}.".format(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR)))
+                        try:
+                            shutil.move(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR))
+                        except OSError as exception:
+                            logMessage("ERROR: {}".format(exception))
+                            abortClusterTAS()
+                            sys.exit("Error moving complete job directory back to projects space.")
+
+                    complete.add(jn)    ## puts job into complete set.
+                    logMessage("Completed:\t{}".format(jn))
+
+                    ## Check if need to loop back to process more jobs in completeQ
+                    if len(completeQ) > 0:
+                        WAIT = False
+
+
+                ###################
+                ## Check if done ##
+                ###################
+
+                ## Check if done running
+                if len(apolloRunningJobs) == 0 and len(genesisRunningJobs) == 0 and doneSubmitting and len(completeQ) == 0:
+                    doneRunning = True
+                    break
+
+                ## Check if waiting for jobs to finish
+                elif doneSubmitting and len(completeQ) == 0:
                     logMessage("All jobs submitted, {} jobs still running. Waiting {} seconds to check for completion.".format(len(running),REFRESH))
                     WAIT = True
 
-                ## reset vars since we submitted this job.
-                firstjob = False
-                jobname = None
-                files = None
-                genScript = None
+                ###################
+                ## Get next job  ##
+                ## if not loaded ##
+                ###################
 
-            ## Go into WAIT unless there are jobs to move back
-            elif MAX_JOBS and len(completeQ) == 0:
-                ## failed to submit next job because too many jobs
-                if not doneSubmitting:
-                    logMessage("Too many jobs in queue, will recheck every {} seconds.".format(REFRESH))
-                WAIT = True
+                elif not jobname and not doneSubmitting:
+                    #jobToProcess = toRun.popitem()
+                    keyToProcess = toRunKeys.popleft()
+                    jobToProcess = toRun[keyToProcess]
+                    del toRun[keyToProcess]
 
-            elif INFLATION and len(completeQ) == 0:
-                ## failed to submit next job because too little space
-                if not doneSubmitting:
-                    if VERB: logMessage("INITIAL free space on genesis: {} bytes.".format(genesisSpace))
-                    if VERB: logMessage("CURRENT free space on genesis: {} bytes.".format(curGenesisSpace))
-                    logMessage("Not enough free space for job {} (requires {} bytes, only {} are available).\nWill recheck every {} seconds".format(jobname, fileSizes[jobname], curGenesisSpace, REFRESH))
-                WAIT = True
+                    if DEBUG: print("jobToProcess = {}".format(jobToProcess))
 
-            if WAIT:
-                print("Waiting {} seconds...".format(REFRESH))
-                time.sleep(REFRESH)
+                    jobname = keyToProcess
+                    files = jobToProcess[0]
+                    genScript = jobToProcess[1]
+
+                    if not genScript.endswith(";"):
+                        genScript += ";"
+
+                    logMessage("Queued for preparation:\t{}.".format(jobname))
+
+                    if DEBUG: print("jobname = {}".format(jobname))
+                    if DEBUG: print("files = {}".format(files))
+                    if DEBUG: print("genScript = {}".format(genScript))
+
+                    ## Get file sizes for this job
+                    if INFLATION:
+                        fileSizes[jobname] = 0
+                        for f in files:
+                            fileSizes[jobname] += spaceNeededForFile(f, INFLATION)
+                        if VERB: logMessage("Job {} requires {} bytes.".format(jobname,fileSizes[jobname]))
+
+
+                ######################
+                ## CHECK IF ALLOWED ##
+                ## PROCESS NEXT JOB ##
+                ######################
+
+                ## Three cases:
+                ## 1 - not limiting by number of jobs or space
+                ## 2 - limiting by number of jobs, and a job can be added
+                ## 3 - limiting by space, and there is space left.
+                if not doneSubmitting and ((not MAX_JOBS and not INFLATION) or (MAX_JOBS and len(apolloRunningJobs) + len(genesisRunningJobs) < MAX_JOBS) or (INFLATION and curGenesisSpace - fileSizes[jobname] > 0)):
+
+                    WAIT = False
+
+                    logMessage("Preparing:\t{}.".format(jobname))
+
+                    ## prepare jobs
+                    ## make transfer script
+                    ascript = ""
+                    jobDest = ""
+
+                    if JOB_DIRS:  ## if want separate dir for each job
+                        jobDest = os.path.join("/genesis/", GWD[1:], jobname)
+                        ## note GWD[1:] to remove the leading /
+                        if DEBUG: print("jobDest = {}".format(jobDest))
+                    else:
+                        jobDest = os.path.join("/genesis/", GWD[1:])
+
+                    ascriptHeader = "#! /bin/sh\n\n#$ -S /bin/sh\n\n"
+
+                    for f in files:
+                        ascript += "/bin/cp -p {} {}; ".format(f, jobDest)
+
+                    ascript += "ssh {}@genesis.bcgsc.ca 'cd {}; source /etc/profile.d/sge.sh; qsub {} {} {}.sh;';\n".format(USER, jobDest.replace("/genesis", ""), QSUB_MEM, GEN_QSUB, jobname)
+
+                    if DEBUG:
+                        if USE_APOLLO:
+                            print("Transfer script to be submitted on Apollo: \"{}\"".format(ascript))
+                        else:
+                            print("Transfer script to be submitted on {}".format(os.uname()[1]))
+
+                    ## write transfer script
+                    transferScript = open(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)), "w")
+                    transferScript.write("{}{}".format(ascriptHeader, ascript))
+                    transferScript.close()
+
+                    os.chmod(os.path.join(LWD, TRANS_DEST_DIR, "{}.sh".format(jobname)),0o755)
+
+                    ## make genesis script
+                    gscript = ""
+                    genDir = jobDest.replace("/genesis", "")
+
+                    gscriptHeader = "#! /bin/sh\n\n#Automatically generated by clusterTAS\n\n#$ -S /bin/sh\n\n"
+
+                    if DATE:
+                        gscript += "date; "
+                    gscript += "cd {}; ".format(genDir)
+                    gscript += genScript
+                    if CLEANUP:
+                        for f in files:
+                            f2remove = os.path.basename(f)
+                            gscript += " /bin/rm {};".format(f2remove)
+                    if DATE:
+                        gscript += " date;"
+
+                    ## write genesis script
+                    if JOB_DIRS:
+                        try:
+                            os.makedirs(os.path.join("/genesis", GWD[1:], jobname))
+                        except OSError as exception:
+                            if exception.errno != errno.EEXIST:
+                                raise
+
+                    if DEBUG: print("Analysis script to be submitted on Genesis: \"{}\"".format(gscript))
+
+                    genesisScript = open(os.path.join(jobDest, "{}.sh".format(jobname)), "w")
+                    genesisScript.write("{}{}".format(gscriptHeader, gscript))
+                    genesisScript.close()
+
+                    os.chmod(os.path.join(jobDest, "{}.sh".format(jobname)),0o755)
+
+                    ## submit transfer job
+                    logMessage("Submitting:\t{}.".format(jobname))
+                    if USE_APOLLO:
+                        subCmd = "ssh {}@apollo.bcgsc.ca 'cd {}; qsub -q thosts.q -P transfer {}.sh;'".format(USER, os.path.join(LWD, TRANS_DEST_DIR), jobname)
+                    else:
+                        subCmd = "cd {}; sh {}.sh;".format(os.path.join(LWD, TRANS_DEST_DIR), jobname)
+                    VALID_COM = False
+                    num_tries = 0
+                    while not VALID_COM:
+                        call = subprocess.Popen(subCmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                        (res, err) = call.communicate()
+                        if err.decode('ascii') == "":
+                            VALID_COM = True
+                        elif num_tries == MAX_OSCALL_TRIES:
+                            logMessage("Unable to complete system call. Aborting...")
+                            abortClusterTAS()
+                            sys.exit("Error submitting transfer script.")
+                        else:
+                            num_tries += 1
+                            logMessage("ERROR SUBMITTING TRANSFER SCRIPT!\nError: {}".format(str(err.decode('ascii'))))
+                            logMessage("Waiting 1 minute to try again...")
+                            time.sleep(60)
+
+                    ## if need to track, add submitted job to list.
+
+                    running.add(jobname)
+                    if INFLATION:
+                        curGenesisSpace -= fileSizes[jobname]
+
+                    ## If in test mode and first job has been submitted.
+                    if TEST and firstjob:
+                        ## check with user to continue or not
+                        response = ""
+                        logMessage("TEST STATE: The job '{}' has been submitted. Check the result.".format(jobname))
+                        while response not in ["c", "e"]:
+                            logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n", noPrint = True)
+                            response = input("Do you want to [c]ontinue with remaining jobs, or [e]xit? ").lower()
+                        logMessage("{}\n".format(response))
+                        if response == "c":
+                            TEST = False
+                            jobname = None
+                            files = None
+                            genScript = None
+
+                        elif response == "e":
+                            logMessage("Exiting")
+                            sys.exit("Exiting TEST state.")
+
+                    ## if toRun is empty, done submitting.
+                    if len(toRun) == 0:
+                        doneSubmitting = True
+                        logMessage("All jobs submitted, {} jobs still running. Waiting {} seconds to check for completion.".format(len(running),REFRESH))
+                        WAIT = True
+
+                    ## reset vars since we submitted this job.
+                    firstjob = False
+                    jobname = None
+                    files = None
+                    genScript = None
+
+                ## Go into WAIT unless there are jobs to move back
+                elif MAX_JOBS and len(completeQ) == 0:
+                    ## failed to submit next job because too many jobs
+                    if not doneSubmitting:
+                        logMessage("Too many jobs in queue, will recheck every {} seconds.".format(REFRESH))
+                    WAIT = True
+
+                elif INFLATION and len(completeQ) == 0:
+                    ## failed to submit next job because too little space
+                    if not doneSubmitting:
+                        if VERB: logMessage("INITIAL free space on genesis: {} bytes.".format(genesisSpace))
+                        if VERB: logMessage("CURRENT free space on genesis: {} bytes.".format(curGenesisSpace))
+                        logMessage("Not enough free space for job {} (requires {} bytes, only {} are available).\nWill recheck every {} seconds".format(jobname, fileSizes[jobname], curGenesisSpace, REFRESH))
+                    WAIT = True
+
+                if WAIT:
+                    print("Waiting {} seconds...".format(REFRESH))
+                    time.sleep(REFRESH)
+                else:
+                    print("Holding 1 second for safe time to pause...")
+                    time.sleep(1)
+
+            except KeyboardInterrupt:
+                res = pauseState()
+                if res == "c":
+                    ## continue
+                    pass
+                elif res == "q":
+                    abortClusterTAS()
+                    sys.exit("User-interrupted from PAUSE state.")
 
     except:
         logMessage("An EXCEPTION was encountered. Aborting...")
@@ -843,5 +893,5 @@ if __name__ == "__main__":
             os.rmdir(os.path.join("/genesis", GWD[1:]))
         except OSError as exception:
             logMessage("ERROR: {}".format(exception))
-            sys.exit(1)
+            sys.exit("Error removing Genesis directory.")
     logMessage("All jobs have completed. Closing.")

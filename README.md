@@ -50,6 +50,10 @@ usage: clusterTAS [-h] [--genMem N] [--genQsub "qsub args"] [--maxJobs N]
 ```
 `clusterTAS -h` for more information.
 
+Pressing `Ctrl-c` while clusterTAS is running may set the program into a PAUSE state. This allows submission of jobs to be suspended, and modification of some variables (max number of jobs, refresh time, DEBUG and VERB). Caution should be taken, if PAUSE state is entered in the middle of processing, jobs may be lost. There is a 1 second safe window where the PAUSE state can be entered each iteration, identified by "Holding 1 second for safe time to pause..." appearing on the screen. Alternatively, it can be entered during any Wait period.
+
+Should the program be ended unexpectedly, clusterTAS will attempt to write output files containing completed and running job names, and will print which line to resume processing at.
+
 Logfile of all output created. Additionally, tracks environment information:
 ```
     clusterTAS Genesis Analysis Management Script
