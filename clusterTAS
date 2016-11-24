@@ -234,9 +234,9 @@ def promptUserContinue(msg):
     logMessage(msg)
     response = ""
     while response not in ["y","n"]:
-        logMessage("Are you sure you want to continue (y/n)? \n")
+        logMessage("Are you sure you want to continue (y/n)? \n", False)
         response = input("Are you sure you want to continue (y/n)? ").lower()
-    logMessage("{}\n".format(response))
+    logMessage("{}\n".format(response), False)
     if response == "n":
         sys.exit("User ended.")
 
@@ -353,11 +353,11 @@ def getRunningJobs(cluster):
 
     return set(jobs)
 
-def logMessage(msg, noPrint = False):
+def logMessage(msg, yesPrint = True):
     log = open(os.path.join(LWD,LOG_FILE), "a")
     log.write("{}\n".format(msg))
     log.close()
-    if not noPrint: print(msg.rstrip())
+    if yesPrint: print(msg.rstrip())
 
 def abortClusterTAS():
     running_file = open(os.path.join(LWD,"{}.abortRunning".format(LOG_FILE)), "w")
@@ -386,7 +386,7 @@ def pauseState():
             logMessage("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
             mod = input()
             while mod not in [1,2,3,4]:
-                mod = input()"Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB)
+                mod = input("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
             if mod == 1:
                 ## update maxJobs
                 logMessage("Enter maximum jobs to be run concurrently.\n")
