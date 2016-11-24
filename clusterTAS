@@ -372,42 +372,53 @@ def abortClusterTAS():
     complete_file.write("\n".join(complete))
     complete_file.close()
 
-    logMessage("Resume at line {}.".format(len(transfer) - len(toRun)))
+    logMessage("Resume at line {}.".format(len(transfer) - len(toRun) + 1))
 
 def pauseState():
     resp = ""
     while resp not in ["c","q"]:
-        logMessage("cluserTAS is PAUSED")
+        logMessage("\n==cluserTAS is PAUSED==\n")
         logMessage("You can [c]ontinue, [q]uit, or [m]odify variables.")
         resp = input().lower()
         while resp not in ["c","q","m"]:
             resp = input("You can [c]ontinue, [q]uit, or [m]odify variables.\n").lower()
         if resp == "m":
-            logMessage("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
+            global MAX_JOBS
+            global REFRESH
+            global DEBUG
+            global VERB
+            logMessage("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n[b]\tBack\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
             mod = input()
-            while mod not in [1,2,3,4]:
-                mod = input("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n".format(MAX_JOBS, REFRESH, DEBUG, VERB))
-            if mod == 1:
+            while mod not in ["1","2","3","4","b"]:
+                mod = input("Options\t(current):\n[1]\tModify MAX_JOBS ({})\n[2]\tModify REFRESH ({})\n[3]\tToggle DEBUG ({})\n[4]\tToggle VERB ({})\n[b]\tBack\n".format(MAX_JOBS, REFRESH, DEBUG, VERB)).lower()
+            if mod == "1":
                 ## update maxJobs
                 logMessage("Enter maximum jobs to be run concurrently.\n")
                 mj = input()
-                while not mj.isnumeric() and mj > MAX_JOBS_HARD:
-                    if mj.isnumeric():
+                VALID = False
+                while not VALID:
+                    if mj.isnumeric() and int(mj) > MAX_JOBS_HARD:
                         logMessage("Number entered is too high. Max allowed is {}.".format(MAX_JOBS_HARD))
-                    rs = input("Enter frequency for REFRESH (seconds)\n")
-            elif mod == 2:
+                        mj = input("Enter maximum jobs to be run concurrently.\n")
+                    elif not mj.isnumeric():
+                        mj = input("Please enter an integer number.\n")
+                    else:
+                        VALID = True
+                MAX_JOBS = int(mj)
+                logMessage("MAX_JOBS set to {}".format(MAX_JOBS))
+            elif mod == "2":
                 ## update REFRESH
                 logMessage("Enter frequency for REFRESH (seconds)\n")
                 rs = input()
                 while not rs.isnumeric():
-                    rs = input("Enter frequency for REFRESH (seconds)\n")
-                REFRESH = rs
+                    rs = input("Please enter an integer number (seconds)\n")
+                REFRESH = int(rs)
                 logMessage("REFRESH set to {}".format(REFRESH))
-            elif mod == 3:
+            elif mod == "3":
                 ## update DEBUG
                 DEBUG = not DEBUG
                 logMessage("DEBUG set to {}".format(DEBUG))
-            elif mod == 4:
+            elif mod == "4":
                 ## update VERB
                 VERB = not VERB
                 logMessage("VERB set to {}".format(VERB))
