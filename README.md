@@ -65,6 +65,20 @@ Logfile of all output created. Additionally, tracks environment information:
     Time: 2016/06/21 11:13:14
 ```
 
+[clusterTAS_inputMaker.py](clusterTAS_inputMaker.py)
+--------------------------
+
+December 9, 2016
+
+Example script to generate the shell script required as input for clusterTAS.
+
+```
+usage: python3 clusterTAS_inputMaker.py fof_file output_sh_file
+```
+`python3 clusterTAS_inputMaker.py -h` for more information
+
+Requires a fof_file as input. Each line of this file will become a single job on the cluster. If there are multiple files per job, they should be tab separated.
+
 [fastaToFastq.py](fastaToFastq.py)
 -----------------
 
