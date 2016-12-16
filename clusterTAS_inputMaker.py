@@ -47,7 +47,7 @@ if __name__ == "__main__":
         ## It can be a number, a sample name, etc.
         ## But should be valid as a directory name (no slashes, special characters. - or _ is fine)
         ## Here I have set the jobname to the line number.
-        jobname = lineNumber
+        jobname = "job{}".format(lineNumber)
 
 
         ## Create the script
