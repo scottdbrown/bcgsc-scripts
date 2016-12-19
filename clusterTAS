@@ -305,6 +305,13 @@ def getJobDirSize(jobDir):
 
     return int(res.decode('ascii'))
 
+def isInteger(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 def readFile(filename):
     filedat = []
     try:
@@ -564,6 +571,10 @@ if __name__ == "__main__":
             if " " in scriptsLine[0] or "." in scriptsLine[0] or ":" in scriptsLine[0]:
                 logMessage("ERROR: Jobname cannot contain spaces ( ), periods (.), or colons (:) - {}".format(scriptsLine[0]))
                 sys.exit("ERROR: Jobname cannot contain spaces ( ), periods (.), or colons (:) - {}".format(scriptsLine[0]))
+
+            if isInteger(scriptsLine[0][0:1]):
+                logMessage("ERROR: Jobname cannot start with a number - {}".format(scriptsLine[0]))
+                sys.exit("ERROR: Jobname cannot start with a number - {}".format(scriptsLine[0]))
 
             toRun[scriptsLine[0]] = [transferLine, scriptsLine[1]]
             toRunKeys.append(scriptsLine[0])
