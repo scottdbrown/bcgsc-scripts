@@ -670,7 +670,7 @@ if __name__ == "__main__":
                         try:
                             if(os.path.exists(os.path.join(LWD,RES_DEST_DIR, jn))):
                                 logMessage("Results directory {} exists. Overwriting.".format(os.path.join(LWD,RES_DEST_DIR, jn)))
-                                os.remove(os.path.join(LWD,RES_DEST_DIR, jn))
+                                shutil.rmtree(os.path.join(LWD,RES_DEST_DIR, jn))
                             shutil.move(os.path.join("/genesis/", GWD[1:], jn), os.path.join(LWD,RES_DEST_DIR))
                         except OSError as exception:
                             logMessage("ERROR: {}".format(exception))
