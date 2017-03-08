@@ -848,7 +848,7 @@ if __name__ == "__main__":
                         response = ""
                         logMessage("TEST STATE: The job '{}' has been submitted. Check the result.".format(jobname))
                         while response not in ["c", "e"]:
-                            logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n", noPrint = True)
+                            logMessage("Do you want to [c]ontinue with remaining jobs, or [e]xit? \n", yesPrint = False)
                             response = input("Do you want to [c]ontinue with remaining jobs, or [e]xit? ").lower()
                         logMessage("{}\n".format(response))
                         if response == "c":
