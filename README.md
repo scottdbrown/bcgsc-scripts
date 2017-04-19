@@ -70,7 +70,7 @@ Logfile of all output created. Additionally, tracks environment information:
 
 December 9, 2016
 
-Example script to generate the shell script required as input for clusterTAS.
+(Optional) Example script to generate the shell script required as input for clusterTAS.
 
 ```
 usage: python3 clusterTAS_inputMaker.py fof_file output_sh_file
