@@ -148,7 +148,7 @@ def processArgs(args):
     GEN_MEM = args.genMem
     if DEBUG: print("GEN_MEM = {}".format(GEN_MEM))
     if GEN_MEM:
-        QSUB_MEM = "-l mem_free={}G -l mem_token={}G -l h_vmem={}G".format(GEN_MEM, GEN_MEM, GEN_MEM)
+        QSUB_MEM = "-l mem_free={}G,mem_token={}G,h_vmem={}G".format(GEN_MEM, GEN_MEM, GEN_MEM)
     if DEBUG: print("QSUB_MEM = {}".format(QSUB_MEM))
     global GEN_QSUB
     GEN_QSUB = args.genQsub
