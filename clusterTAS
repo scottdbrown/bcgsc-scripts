@@ -892,8 +892,8 @@ if __name__ == "__main__":
                     print("Waiting {} seconds...".format(REFRESH))
                     time.sleep(REFRESH)
                 else:
-                    print("Holding 1 second for safe time to pause...")
-                    time.sleep(1)
+                    print("Holding 0.5 seconds for safe time to pause...")
+                    time.sleep(0.5)
 
             except KeyboardInterrupt:
                 res = pauseState()
