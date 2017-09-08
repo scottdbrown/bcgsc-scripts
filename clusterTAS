@@ -85,6 +85,7 @@ completeQ = set()               ## set of jobs that need to be processed before 
 stats = ""                      ## string to hold running stats for each iteration
 statsPrev = ""                  ## string to hold running stats for previous iteration
 WAIT = False                    ## boolean to wait REFRESH time
+PAUSE_TIMER = 1                 ## number of cycles, to prevent pausing every cycle
 
 
 
@@ -891,9 +892,12 @@ if __name__ == "__main__":
                 if WAIT:
                     print("Waiting {} seconds...".format(REFRESH))
                     time.sleep(REFRESH)
+                elif PAUSE_TIMER % 11 == 0:
+                    print("Holding 1 second for safe time to pause...")
+                    PAUSE_TIMER = 1
+                    time.sleep(1)
                 else:
-                    print("Holding 0.5 seconds for safe time to pause...")
-                    time.sleep(0.5)
+                    PAUSE_TIMER += 1
 
             except KeyboardInterrupt:
                 res = pauseState()
