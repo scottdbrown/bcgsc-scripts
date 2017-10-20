@@ -107,8 +107,8 @@ usage: python3 sstat.py [-h] [-d] [-v] gscServersToCheck.csv
 ```
 
 Example output:
-```
-gphost01:  MEM [|                   ] 3.4%      CPU [|||                 ] 13%
+```sh
+gphost01:  MEM [\033[92m|                   \033[0m] 3.4%      CPU [\033[92m|||                 \033[0m] 13%
 gphost02:  MEM [|                   ] 1.8%      CPU [|                   ] 1%
 gphost03:  MEM [|                   ] 3.7%      CPU [|||                 ] 15%
 gphost04:  MEM [||||||||||          ] 45.7%     CPU [||                  ] 6%
