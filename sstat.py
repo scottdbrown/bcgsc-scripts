@@ -83,54 +83,44 @@ if __name__ == "__main__":
 
     
     ## Submit queries
-    memcalls = []
-    cpucalls = []
+    calls = []
     for serv in servers:
-        ## mem call
-        cmd = "ssh {}@{} 'free;'".format(USER,ips[serv])
-        memcalls.append(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True))
-        time.sleep(0.2) ## slight pause so no exactly concurrent requests
-        ## cpu call
-        cmd = "ssh {}@{} 'vmstat 1 2 | tail -1;'".format(USER,ips[serv])
-        cpucalls.append(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True))
-        time.sleep(0.2) ## slight pause so no exactly concurrent requests
+        ## mem and cpu call
+        cmd = "ssh {}@{} 'free; vmstat 1 2 | tail -1;'".format(USER,ips[serv])
+        calls.append(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True))
+        time.sleep(0.2)
 
     ## Get results
     for i in range(0, len(servers)):
         out = "{}:  ".format(servers[i])
-        ## MEM
-        (res, err) = memcalls[i].communicate()
+
+        (res, err) = calls[i].communicate()
         if err.decode('ascii') in ALLOWED_SUBPROCESS_ERRORS:
-            ##success
+            ## expected res format:
+            ##              total       used       free     shared    buffers     cached
+            ##  Mem:        387495     370688      16806       5857        206     363639
+            ##  -/+ buffers/cache:       6841     380653
+            ##  Swap:         8191       5415       2776
+            ##  1  0 5545612 17210076 211952 372366624    0    0     0     0 1402  400  1  3 97  0  0
             res = res.decode("ascii")
             res = res.split("\n")
+            ## get MEM details (lines 0-3)
             memline1 = res[1]
             memline1 = memline1.split()
-            #print(memline)
             memtot = int(memline1[1])
             memline2 = res[2]
             memline2 = memline2.split()
             memusd = int(memline2[2])
             memprc = 100*(memusd/memtot)
             out += "MEM [{}] {:1.1f}% \t".format(printChart(memprc,BAR_WIDTH),memprc)
-        else:
-            if DEBUG: print(err.decode("ascii"))
-            out += "MEM [{}] --.-% \t".format("-"*BAR_WIDTH)
-
-        ## CPU
-        (res, err) = cpucalls[i].communicate()
-        if err.decode('ascii') in ALLOWED_SUBPROCESS_ERRORS:
-            ##success
-            res = res.decode("ascii")
-            #print(res)
-            res = res.split("\n")
-            #print(res)
-            res = res[0]
+            ## get CPU details (line 4)
+            res = res[4]
             res = res.split()
             cpuprc = int(res[12])
             out += "CPU [{}] {}%".format(printChart(cpuprc,20),cpuprc)
         else:
             if DEBUG: print(err.decode("ascii"))
+            out += "MEM [{}] --.-% \t".format("-"*BAR_WIDTH)
             out += "CPU [{}] -% \t".format("-"*BAR_WIDTH)
 
         print(out)
