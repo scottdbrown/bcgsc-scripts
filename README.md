@@ -105,3 +105,19 @@ Note, you must be able to ssh into each server without entering your password (h
 ```
 usage: python3 sstat.py [-h] [-d] [-v] gscServersToCheck.csv
 ```
+
+Example output:
+```
+gphost01:  MEM [|                   ] 3.4%      CPU [|||                 ] 13%
+gphost02:  MEM [|                   ] 1.8%      CPU [|                   ] 1%
+gphost03:  MEM [|                   ] 3.7%      CPU [|||                 ] 15%
+gphost04:  MEM [||||||||||          ] 45.7%     CPU [||                  ] 6%
+gphost05:  MEM [|                   ] 2.3%      CPU [||||                ] 20%
+gphost06:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost07:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost08:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost09:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost10:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost11:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+gphost12:  MEM [|                   ] 0.6%      CPU [                    ] 0%
+```
