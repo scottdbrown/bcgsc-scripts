@@ -94,3 +94,14 @@ usage: fastaToFastq.py [-h] [-d] [-v] fastaFile fastqFile
 Created for converting capillary sequencing data files into fastq format for running in MiTCR, with -quality 0 flag used.
 (MiTCR requires files to be in fastq format even if quality information is not used).
 
+[sstat.py](sstat.py)
+----------
+
+October 20, 2017
+
+Utility to check the load on the gphosts.
+Note, you must be able to ssh into each server without entering your password (have SSH keys set up).
+
+```
+usage: python3 sstat.py [-h] [-d] [-v] gscServersToCheck.csv
+```
