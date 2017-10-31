@@ -32,19 +32,19 @@ class bcolors:
     UNDERLINE = '\033[4m'
     ENDC = '\033[0m'
 
-def log_print(type, msg):
-    print("{} [{}]: {}".format(type, time.strftime("%Y/%m/%d %T"), msg))
+def log_print(msg_type, msg):
+    print("{} [{}]: {}".format(msg_type, time.strftime("%Y/%m/%d %T"), msg))
 
 
-def printChart(prc, len):
-    numToPrint = math.ceil((prc/100)*len)
-    res = "{}{}{}{}".format(bcolors.OKGREEN,"|"*numToPrint," "*(len-numToPrint), bcolors.ENDC)
+def printChart(prc, length):
+    numToPrint = math.ceil((prc/100)*length)
+    res = "{}{}{}{}".format(bcolors.OKGREEN,"|"*numToPrint," "*(length-numToPrint), bcolors.ENDC)
     if prc > 25:
-        res = "{}{}{}{}".format(bcolors.OKBLUE,"|"*numToPrint," "*(len-numToPrint), bcolors.ENDC)
+        res = "{}{}{}{}".format(bcolors.OKBLUE,"|"*numToPrint," "*(length-numToPrint), bcolors.ENDC)
     if prc > 50:
-        res = "{}{}{}{}".format(bcolors.WARNING,"|"*numToPrint," "*(len-numToPrint), bcolors.ENDC)
+        res = "{}{}{}{}".format(bcolors.WARNING,"|"*numToPrint," "*(length-numToPrint), bcolors.ENDC)
     if prc > 75:
-        res = "{}{}{}{}".format(bcolors.FAIL,"|"*numToPrint," "*(len-numToPrint), bcolors.ENDC)
+        res = "{}{}{}{}".format(bcolors.FAIL,"|"*numToPrint," "*(length-numToPrint), bcolors.ENDC)
     return res
 
 
