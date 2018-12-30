@@ -1,0 +1,145 @@
+#!/bin/bash
+
+## ---------- ##
+## newproject ##
+## ---------- ##
+
+## Author: Scott D. Brown
+## e-mail: sbrown@bcgsc.ca
+
+## Date: December 29, 2018
+
+## Creates skeleton for new project directory:
+#        YYMMDD_project-code
+#        ├── .env                 <- file containing credentials
+#        │
+#        ├── .gitignore           <- file containing things for git to ignore
+#        │
+#        ├── activate_python_venv <- source file to activate venv
+#        │
+#        ├── data/
+#        │   ├── README.md        <- description of how data was obtained
+#        │   ├── raw/             <- immutable raw data
+#        │   ├── interim/         <- intermediate data
+#        │   └── processed/       <- processed final data
+#        │
+#        ├── docs/                <- manuscript files
+#        │
+#        ├── figures/             <- generated figures (can be remade)
+#        │
+#        ├── Makefile             <- process the data pipeline
+#        │
+#        ├── notebooks/           <- R or Jupyter
+#        │   ├── exploratory/     <- data exploration
+#        │   └── reports/         <- formal reporting and analyses
+#        │       └── figures/     <- figures for formal reports
+#        │
+#        ├── README.md            <- overview of directory/project
+#        │
+#        ├── requirements.txt     <- Python venv packages and versions
+#        │
+#        ├── src                  <- code
+#        │   ├── data/            <- data processing code
+#        │   ├── analysis/        <- analysis code
+#        │   └── visualization/   <- viz code
+#        │
+#        └── update_requirements  <- run to update python virtual environment requirements
+
+## Will also create new python venv in VENV_PATH.
+
+VENV_PATH=/projects/sbrown_prj/bin/pythonvenv/
+
+## check that usage is correct
+
+if [ $# != 1 ] ; then
+   echo -e "Usage: $0 PROJECT-CODE";
+   echo -e "\nGenerates:";
+   echo -e "        YYMMDD_project-code 
+        ├── .env                 <- file containing credentials 
+        │ 
+        ├── .gitignore           <- file containing things for git to ignore 
+        │ 
+        ├── activate_python_venv <- source file to activate venv
+        │
+        ├── data/
+        │   ├── README.md        <- description of how data was obtained
+        │   ├── raw/             <- immutable raw data
+        │   ├── interim/         <- intermediate data
+        │   └── processed/       <- processed final data
+        │
+        ├── docs/                <- manuscript files
+        │
+        ├── figures/             <- generated figures (can be remade)
+        │
+        ├── Makefile             <- process the data pipeline
+        │
+        ├── notebooks/           <- R or Jupyter
+        │   ├── exploratory/     <- data exploration
+        │   └── reports/         <- formal reporting and analyses
+        │       └── figures/     <- figures for formal reports
+        │
+        ├── README.md            <- overview of directory/project
+        │
+        ├── requirements.txt     <- Python venv packages and versions
+        │
+        ├── src                  <- code
+        │   ├── data/            <- data processing code
+        │   ├── analysis/        <- analysis code
+        │   └── visualization/   <- viz code
+        │
+        └── update_requirements  <- run to update python virtual environment requirements";
+   exit 1;
+fi
+
+
+DATE=`date +%y%m%d`
+PROJECT_CODE=$1
+
+PROJECT_NAME=$DATE"_"$PROJECT_CODE
+
+## check that project directory does not already exist
+
+if [ ! -d $PROJECT_NAME ] ; then
+   echo -e "Building $(pwd)/$PROJECT_NAME...";
+   mkdir $PROJECT_NAME;
+   cd $PROJECT_NAME;
+
+   ## Make subdirectories
+   echo -e "Creating directory structure...";
+   mkdir data;
+   mkdir data/raw;
+   mkdir data/interim;
+   mkdir data/processed;
+   mkdir docs;
+   mkdir figures;
+   mkdir notebooks;
+   mkdir notebooks/exploratory;
+   mkdir notebooks/reports;
+   mkdir notebooks/reports/figures;
+   mkdir src;
+   mkdir src/data;
+   mkdir src/analysis;
+   mkdir src/visualization;
+
+   ## Make files
+   echo -e "Generating files...";
+   touch .env;
+   echo -e ".env\ndata/\nfigures/\n" > .gitignore;
+   echo -e "$PROJECT_NAME - Data\n------\n\n" > data/README.md;
+   echo -e "#$PROJECT_NAME Makefile\n\n" > Makefile;
+   echo -e "$PROJECT_NAME - README\n------\n\n" > README.md;
+   touch requirements.txt;
+
+   ## Make Python venv
+   echo -e "Creating python virtual environment...";
+   pyvenv $VENV_PATH$PROJECT_NAME;
+   echo -e "#!/bin/bash\nsource $VENV_PATH$PROJECT_NAME/bin/activate\n" > activate_python_venv;
+   chmod 755 activate_python_venv;
+   echo -e "#!/bin/bash\n# Check that active python venv is correct\n\nif [[ \$(which python) == *'$PROJECT_NAME'* ]] ; then\n   pip freeze > requirements.txt;\nelse\n   echo 'Correct Python virtual environment ($VENV_PATH$PROJECT_NAME) is not active. Please activate this first.'\nfi\n" > update_requirements
+   chmod 755 update_requirements
+
+else
+   echo -e "ERROR: A directory named $PROJECT_NAME already exists in $(pwd).";
+   echo -e "Please try again with a unique project code.";
+fi
+
