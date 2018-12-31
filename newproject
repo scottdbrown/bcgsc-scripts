@@ -58,7 +58,7 @@ print_usage() {
 
 
 
-## check that usage is correct
+## check that usage is correct, read options
 if [[ $1 == "" ]] ; then
    ## no arguments
    print_usage;
@@ -67,21 +67,22 @@ else
    while getopts 'hn:p' flag; do
       case "${flag}" in
          h) print_usage
-             exit 1;;
+            exit 1 ;;
          n) PROJECT_CODE="${OPTARG}" ;;
          p) p_flag="true" ;;
          *) print_usage
-         exit 1 ;;
+            exit 1 ;;
       esac
    done
 fi
 
+## make project name based on date and code
 DATE=`date +%y%m%d`
-#PROJECT_CODE=$1
 
 PROJECT_NAME=$DATE"_"$PROJECT_CODE
 
 ## check that project directory does not already exist
+## if it does not, build subdirectories and files.
 
 if [ ! -d $PROJECT_NAME ] ; then
    echo -e "Building $(pwd)/$PROJECT_NAME...";
