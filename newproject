@@ -9,91 +9,75 @@
 
 ## Date: December 29, 2018
 
-## Creates skeleton for new project directory:
-#        YYMMDD_project-code
-#        ├── .env                 <- file containing credentials
-#        │
-#        ├── .gitignore           <- file containing things for git to ignore
-#        │
-#        ├── activate_python_venv <- source file to activate venv
-#        │
-#        ├── data/
-#        │   ├── README.md        <- description of how data was obtained
-#        │   ├── raw/             <- immutable raw data
-#        │   ├── interim/         <- intermediate data
-#        │   └── processed/       <- processed final data
-#        │
-#        ├── docs/                <- manuscript files
-#        │
-#        ├── figures/             <- generated figures (can be remade)
-#        │
-#        ├── Makefile             <- process the data pipeline
-#        │
-#        ├── notebooks/           <- R or Jupyter
-#        │   ├── exploratory/     <- data exploration
-#        │   └── reports/         <- formal reporting and analyses
-#        │       └── figures/     <- figures for formal reports
-#        │
-#        ├── README.md            <- overview of directory/project
-#        │
-#        ├── requirements.txt     <- Python venv packages and versions
-#        │
-#        ├── src                  <- code
-#        │   ├── data/            <- data processing code
-#        │   ├── analysis/        <- analysis code
-#        │   └── visualization/   <- viz code
-#        │
-#        └── update_requirements  <- run to update python virtual environment requirements
-
 ## Will also create new python venv in VENV_PATH.
 
 VENV_PATH=/projects/sbrown_prj/bin/pythonvenv/
+p_flag="false"
+
+print_usage() {
+   echo -e "Usage: $0 -n PROJECT-CODE [-p]";
+   echo -e "-n       specify project code to name project";
+   echo -e "-p       flag to create new python virtual environment for this project";
+   echo -e "-h       show brief help";
+   echo -e "\nGenerates:";
+   echo -e "      $(pwd)/YYMMDD_PROJECT-CODE 
+      ├── .env                 <- file containing credentials 
+      │ 
+      ├── .gitignore           <- file containing things for git to ignore 
+      │ 
+      ├── activate_python_venv <- source file to activate venv (if -p)
+      │
+      ├── data/
+      │   ├── README.md        <- description of how data was obtained
+      │   ├── raw/             <- immutable raw data
+      │   ├── interim/         <- intermediate data
+      │   └── processed/       <- processed final data
+      │
+      ├── docs/                <- manuscript files
+      │
+      ├── figures/             <- generated figures (can be remade)
+      │
+      ├── Makefile             <- process the data pipeline
+      │
+      ├── notebooks/           <- R or Jupyter
+      │   ├── exploratory/     <- data exploration
+      │   └── reports/         <- formal reporting and analyses
+      │       └── figures/     <- figures for formal reports
+      │
+      ├── README.md            <- overview of directory/project
+      │
+      ├── requirements.txt     <- Python venv packages and versions (if -p)
+      │
+      ├── src                  <- code
+      │   ├── data/            <- data processing code
+      │   ├── analysis/        <- analysis code
+      │   └── visualization/   <- viz code
+      │
+      └── update_requirements  <- run to update python virtual environment requirements (if -p)";
+}
+
+
 
 ## check that usage is correct
-
-if [ $# != 1 ] ; then
-   echo -e "Usage: $0 PROJECT-CODE";
-   echo -e "\nGenerates:";
-   echo -e "        YYMMDD_project-code 
-        ├── .env                 <- file containing credentials 
-        │ 
-        ├── .gitignore           <- file containing things for git to ignore 
-        │ 
-        ├── activate_python_venv <- source file to activate venv
-        │
-        ├── data/
-        │   ├── README.md        <- description of how data was obtained
-        │   ├── raw/             <- immutable raw data
-        │   ├── interim/         <- intermediate data
-        │   └── processed/       <- processed final data
-        │
-        ├── docs/                <- manuscript files
-        │
-        ├── figures/             <- generated figures (can be remade)
-        │
-        ├── Makefile             <- process the data pipeline
-        │
-        ├── notebooks/           <- R or Jupyter
-        │   ├── exploratory/     <- data exploration
-        │   └── reports/         <- formal reporting and analyses
-        │       └── figures/     <- figures for formal reports
-        │
-        ├── README.md            <- overview of directory/project
-        │
-        ├── requirements.txt     <- Python venv packages and versions
-        │
-        ├── src                  <- code
-        │   ├── data/            <- data processing code
-        │   ├── analysis/        <- analysis code
-        │   └── visualization/   <- viz code
-        │
-        └── update_requirements  <- run to update python virtual environment requirements";
+if [[ $1 == "" ]] ; then
+   ## no arguments
+   print_usage;
    exit 1;
+else
+   while getopts 'hn:p' flag; do
+      case "${flag}" in
+         h) print_usage
+             exit 1;;
+         n) PROJECT_CODE="${OPTARG}" ;;
+         p) p_flag="true" ;;
+         *) print_usage
+         exit 1 ;;
+      esac
+   done
 fi
 
-
 DATE=`date +%y%m%d`
-PROJECT_CODE=$1
+#PROJECT_CODE=$1
 
 PROJECT_NAME=$DATE"_"$PROJECT_CODE
 
@@ -128,15 +112,17 @@ if [ ! -d $PROJECT_NAME ] ; then
    echo -e "$PROJECT_NAME - Data\n------\n\n" > data/README.md;
    echo -e "#$PROJECT_NAME Makefile\n\n" > Makefile;
    echo -e "$PROJECT_NAME - README\n------\n\n" > README.md;
-   touch requirements.txt;
+   if [[ "$p_flag" == true ]] ; then 
+      touch requirements.txt; 
 
-   ## Make Python venv
-   echo -e "Creating python virtual environment...";
-   pyvenv $VENV_PATH$PROJECT_NAME;
-   echo -e "#!/bin/bash\nsource $VENV_PATH$PROJECT_NAME/bin/activate\n" > activate_python_venv;
-   chmod 755 activate_python_venv;
-   echo -e "#!/bin/bash\n# Check that active python venv is correct\n\nif [[ \$(which python) == *'$PROJECT_NAME'* ]] ; then\n   pip freeze > requirements.txt;\nelse\n   echo 'Correct Python virtual environment ($VENV_PATH$PROJECT_NAME) is not active. Please activate this first.'\nfi\n" > update_requirements
-   chmod 755 update_requirements
+      ## Make Python venv
+      echo -e "Creating python virtual environment named $PROJECT_NAME in $VENV_PATH...";
+      pyvenv $VENV_PATH$PROJECT_NAME;
+      echo -e "#!/bin/bash\nsource $VENV_PATH$PROJECT_NAME/bin/activate\n" > activate_python_venv;
+      chmod 755 activate_python_venv;
+      echo -e "#!/bin/bash\n# Check that active python venv is correct\n\nif [[ \$(which python) == *'$PROJECT_NAME'* ]] ; then\n   pip freeze > requirements.txt;\nelse\n   echo 'Correct Python virtual environment ($VENV_PATH$PROJECT_NAME) is not active. Please activate this first.'\nfi\n" > update_requirements
+      chmod 755 update_requirements
+   fi
 
 else
    echo -e "ERROR: A directory named $PROJECT_NAME already exists in $(pwd).";
