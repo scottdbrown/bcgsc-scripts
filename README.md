@@ -121,3 +121,55 @@ gphost10:  MEM [|                   ] 0.6%      CPU [                    ] 0%
 gphost11:  MEM [|                   ] 0.6%      CPU [                    ] 0%
 gphost12:  MEM [|                   ] 0.6%      CPU [                    ] 0%
 ```
+
+[newproject](newproject)
+----------
+
+December 30, 2018
+
+Utility to create new directory skeleton for new project.
+
+Edit line 14 to the path you want to create your python virtual environment (if applicable).
+
+```
+Usage: newproject -n PROJECT-CODE [-p]
+-n       specify project code to name project
+-p       flag to create new python virtual environment for this project
+-h       show brief help
+
+Generates:
+      /current/directory/YYMMDD_PROJECT-CODE
+      ├── .env                 <- file containing credentials
+      │
+      ├── .gitignore           <- file containing things for git to ignore
+      │
+      ├── activate_python_venv <- source file to activate venv (if -p)
+      │
+      ├── data/
+      │   ├── README.md        <- description of how data was obtained
+      │   ├── raw/             <- immutable raw data
+      │   ├── interim/         <- intermediate data
+      │   └── processed/       <- processed final data
+      │
+      ├── docs/                <- manuscript files
+      │
+      ├── figures/             <- generated figures (can be remade)
+      │
+      ├── Makefile             <- process the data pipeline
+      │
+      ├── notebooks/           <- R or Jupyter
+      │   ├── exploratory/     <- data exploration
+      │   └── reports/         <- formal reporting and analyses
+      │       └── figures/     <- figures for formal reports
+      │
+      ├── README.md            <- overview of directory/project
+      │
+      ├── requirements.txt     <- Python venv packages and versions (if -p)
+      │
+      ├── src                  <- code
+      │   ├── data/            <- data processing code
+      │   ├── analysis/        <- analysis code
+      │   └── visualization/   <- viz code
+      │
+      └── update_requirements  <- run to update python virtual environment requirements (if -p)
+```
